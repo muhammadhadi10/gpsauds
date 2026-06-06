@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { LoginForm } from "@/components/site/LoginForm";
 import Link from "next/link";
+import { Suspense } from "react";
+import { LoginForm } from "@/components/site/LoginForm";
 
 export const metadata: Metadata = {
   title: "Member Login",
@@ -13,7 +14,10 @@ export default function LoginPage() {
       {/* Top bar */}
       <div className="bg-navy-900 py-4">
         <div className="container-max section-padding">
-          <Link href="/" className="font-display font-bold text-2xl text-white tracking-tight">
+          <Link
+            href="/"
+            className="font-display font-bold text-2xl text-white tracking-tight"
+          >
             GPSA-UDS
           </Link>
         </div>
@@ -35,7 +39,13 @@ export default function LoginPage() {
           </div>
 
           <div className="bg-white rounded-2xl border shadow-sm p-8">
-            <LoginForm />
+            {/*
+              LoginForm uses useSearchParams() which requires Suspense
+              in Next.js 14 App Router to avoid static rendering errors.
+            */}
+            <Suspense fallback={<LoginFormSkeleton />}>
+              <LoginForm />
+            </Suspense>
           </div>
 
           <div className="mt-6 text-center space-y-3">
@@ -48,12 +58,25 @@ export default function LoginPage() {
                 Join GPSA-UDS
               </Link>
             </p>
-            <Link href="/" className="block text-xs text-muted-foreground hover:text-navy-900 transition-colors">
+            <Link
+              href="/"
+              className="block text-xs text-muted-foreground hover:text-navy-900 transition-colors"
+            >
               Back to main site
             </Link>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LoginFormSkeleton() {
+  return (
+    <div className="space-y-5 animate-pulse">
+      <div className="h-12 bg-gray-100 rounded-xl" />
+      <div className="h-12 bg-gray-100 rounded-xl" />
+      <div className="h-12 bg-gray-200 rounded-xl" />
     </div>
   );
 }

@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 const schema = z.object({
@@ -15,22 +16,25 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-const ROLE_REDIRECTS: Record<string, string> = {
-  super_admin:  "/dashboard",
-  treasurer:    "/dashboard",
-  academic:     "/dashboard",
-  welfare:      "/dashboard",
-  events:       "/dashboard",
-  opportunities:"/dashboard",
-  ediboard:     "/dashboard",
-  student:      "/dashboard/student",
+const ROLE_DASHBOARDS: Record<string, string> = {
+  super_admin:   "/dashboard/admin",
+  treasurer:     "/dashboard/treasurer",
+  academic:      "/dashboard/academic",
+  welfare:       "/dashboard/welfare",
+  events:        "/dashboard/events",
+  opportunities: "/dashboard/opportunities",
+  ediboard:      "/dashboard/ediboard",
+  student:       "/dashboard/student",
 };
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo");
+
   const [showPassword, setShowPassword] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError]       = useState<string | null>(null);
+  const [loading, setLoading]           = useState(false);
 
   const {
     register,
@@ -43,6 +47,7 @@ export function LoginForm() {
     setAuthError(null);
 
     const supabase = createClient();
+
     const { data: authData, error } = await supabase.auth.signInWithPassword({
       email:    data.email,
       password: data.password,
@@ -58,7 +63,13 @@ export function LoginForm() {
       return;
     }
 
-    // Fetch role from profiles
+    // If middleware set a redirectTo param, honour it (only allow internal paths)
+    if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
+      router.push(redirectTo);
+      return;
+    }
+
+    // Otherwise route to their role-specific dashboard
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
@@ -66,12 +77,12 @@ export function LoginForm() {
       .single();
 
     const role = (profile?.role as string) ?? "student";
-    const redirect = ROLE_REDIRECTS[role] ?? "/dashboard/student";
-    router.push(redirect);
+    router.push(ROLE_DASHBOARDS[role] ?? "/dashboard/student");
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {/* Email */}
       <div>
         <label className="block text-sm font-medium text-navy-900 mb-1.5">
           Email Address
@@ -90,14 +101,18 @@ export function LoginForm() {
         )}
       </div>
 
+      {/* Password */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="block text-sm font-medium text-navy-900">
             Password
           </label>
-          <button type="button" className="text-xs text-muted-foreground hover:text-navy-900 transition-colors">
+          <Link
+            href="/forgot-password"
+            className="text-xs text-muted-foreground hover:text-navy-900 transition-colors"
+          >
             Forgot password?
-          </button>
+          </Link>
         </div>
         <div className="relative">
           <input
@@ -123,6 +138,7 @@ export function LoginForm() {
         )}
       </div>
 
+      {/* Auth error */}
       {authError && (
         <div className="px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
           {authError}
@@ -134,7 +150,7 @@ export function LoginForm() {
         disabled={loading}
         className="w-full py-3.5 bg-navy-900 hover:bg-navy-800 text-white font-semibold rounded-xl transition-colors disabled:opacity-60"
       >
-        {loading ? "Signing in..." : "Sign In"}
+        {loading ? "Signing in…" : "Sign In"}
       </button>
     </form>
   );
