@@ -1,0 +1,66 @@
+Build the complete public-facing website for GPSA-UDS. It should be visually stunning — professional, clean, and trustworthy. Use the brand colors navy (#0f2545) and gold (#c8973a). Use Google Fonts: Playfair Display for headings, DM Sans for body text.
+
+Build these pages under src/app/(site)/:
+
+1. HOME PAGE (page.tsx) with sections:
+   - Hero: full-screen with animated tagline, "Join GPSA" CTA, "Login" button
+   - Stats counter: Members, Events, Years Active, Opportunities (animated on scroll)
+   - About: mission, vision, brief history
+   - Executive team: president photo, name, welcome message (pulled from site_settings table)
+   - Upcoming events: 3 latest published events
+   - Latest news: 3 latest published articles
+   - Featured opportunities: scholarships/internships
+   - Welfare banner: "Need Help? We're here" with emergency contact
+   - Partners section
+   - Newsletter subscription form
+
+2. ABOUT PAGE (/about)
+   - History of GPSA-UDS
+   - Mission & Vision
+   - Committee structure with all committee names and roles
+   - Leadership team (pulled from committee_members table)
+
+3. EVENTS PAGE (/events)
+   - Filter by: upcoming, past, category
+   - Event cards with date, location, registration button
+   - Individual event page (/events/[slug]) with full details and registration form
+
+4. NEWS PAGE (/news)
+   - News grid with featured article
+   - Category filters
+   - Individual article page (/news/[slug])
+
+5. OPPORTUNITIES PAGE (/opportunities)
+   - Filter by type: scholarship, internship, conference, grant
+   - Cards showing deadline, provider, value
+   - Individual opportunity page (/opportunities/[slug])
+
+6. WELFARE PAGE (/welfare)
+   - Information about welfare services
+   - Submit welfare/complaint form (fields: name, email, phone, category, subject, description, file upload)
+   - Form submits to /api/welfare/submit
+   - Show ticket reference number on success
+
+7. ACADEMIC RESOURCES PAGE (/resources)
+   - Browse by level (100-600) and type (past questions, lecture notes, etc.)
+   - Download buttons
+
+8. MEMBERSHIP PAGE (/join)
+   - Benefits of membership
+   - Application form: full name, email, index number, level, phone
+   - Payment choice: Online MoMo (Paystack) or Upload Receipt
+   - If receipt: upload field
+   - Submit to /api/membership/apply
+
+9. LOGIN PAGE (/login)
+   - Email + password form
+   - Redirects to correct dashboard based on user role
+
+10. SHARED COMPONENTS:
+    - Navbar with mobile hamburger menu
+    - Footer with real social links, contact info, quick links
+    - LoadingSpinner
+    - EventCard, NewsCard, OpportunityCard
+    - SectionHeader
+
+All data fetched from Supabase. Use server components where possible.
