@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
  * Clears the Supabase session and redirects to /login.
  */
 export async function POST() {
-  const supabase = createClient();
+  const supabase = await createClient();
   await supabase.auth.signOut();
 
   return NextResponse.redirect(

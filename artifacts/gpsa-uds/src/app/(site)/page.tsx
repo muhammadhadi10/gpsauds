@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [eventsRes, newsRes, opportunitiesRes, settingsRes] = await Promise.all([
     supabase

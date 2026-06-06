@@ -29,7 +29,7 @@ const TYPE_COLORS: Record<string, "navy" | "gold" | "green" | "red" | "gray"> = 
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase
     .from("opportunities")
     .select("title, description")
@@ -44,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function OpportunityDetailPage({ params }: Props) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data } = await supabase
     .from("opportunities")

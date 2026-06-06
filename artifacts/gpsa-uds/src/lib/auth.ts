@@ -12,7 +12,7 @@ export type AuthUser = Profile;
  * Safe to call in Server Components — reads the session from cookies.
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { session },
@@ -52,17 +52,6 @@ export async function requireRole(...roles: UserRole[]): Promise<AuthUser> {
   const user = await requireAuth();
 
   if (!roles.includes(user.role as UserRole)) {
-    // Redirect them to their own dashboard rather than a 403
-    const ROLE_DASHBOARDS: Record<string, string> = {
-      super_admin:   "/dashboard/admin",
-      treasurer:     "/dashboard/treasurer",
-      academic:      "/dashboard/academic",
-      welfare:       "/dashboard/welfare",
-      events:        "/dashboard/events",
-      opportunities: "/dashboard/opportunities",
-      ediboard:      "/dashboard/ediboard",
-      student:       "/dashboard/student",
-    };
     redirect(ROLE_DASHBOARDS[user.role] ?? "/dashboard/student");
   }
 

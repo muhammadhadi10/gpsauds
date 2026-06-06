@@ -20,7 +20,7 @@ const BENEFITS = [
 ];
 
 export default async function JoinPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: settings } = await supabase
     .from("site_settings")
     .select("key, value")

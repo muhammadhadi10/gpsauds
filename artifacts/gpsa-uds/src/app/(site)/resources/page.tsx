@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export const revalidate = 120;
 
 export default async function ResourcesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase
     .from("academic_resources")
     .select("*")

@@ -1,0 +1,10 @@
+schemaVersion = 1
+id = "gpsa-uds"
+kind = "nextjs"
+title = "GPSA-UDS"
+previewPath = "/gpsa"
+
+[[services]]
+name = "GPSA-UDS Web App"
+localPort = 3000
+paths = ["/gpsa"]

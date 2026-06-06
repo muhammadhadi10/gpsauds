@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = [
@@ -33,46 +33,38 @@ function isPublic(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Build a response we can mutate (for cookie refresh)
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
+  let response = NextResponse.next({ request });
 
-  // Create a Supabase client that can read/write cookies through middleware
+  // Supabase client that reads/writes cookies through middleware
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options });
-          response = NextResponse.next({
-            request: { headers: request.headers },
-          });
-          response.cookies.set({ name, value: "", ...options });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
         },
       },
     }
   );
 
-  // Refresh session — this is the key call that keeps sessions alive
+  // Refresh session — keeps sessions alive
   const {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // ── Public route — let through (still refreshes session cookie) ──────────
+  // ── Public route ──────────────────────────────────────────────────────────
   if (isPublic(pathname)) {
-    // If logged-in user hits /login, redirect to their dashboard
+    // Logged-in user hitting /login → redirect to their dashboard
     if (pathname === "/login" && session) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -81,8 +73,7 @@ export async function middleware(request: NextRequest) {
         .single();
 
       const role = (profile?.role as string) ?? "student";
-      const dest = ROLE_DASHBOARDS[role] ?? "/dashboard/student";
-      return NextResponse.redirect(new URL(dest, request.url));
+      return NextResponse.redirect(new URL(ROLE_DASHBOARDS[role] ?? "/dashboard/student", request.url));
     }
     return response;
   }
@@ -95,7 +86,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Role-gated sub-dashboard paths ────────────────────────────────────────
-  // e.g. /dashboard/treasurer should only be accessible by treasurer / super_admin
   if (pathname.startsWith("/dashboard/")) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -105,24 +95,20 @@ export async function middleware(request: NextRequest) {
 
     const role = (profile?.role as string) ?? "student";
 
-    // /dashboard (bare) → redirect to correct sub-dashboard
     if (pathname === "/dashboard") {
-      const dest = ROLE_DASHBOARDS[role] ?? "/dashboard/student";
-      return NextResponse.redirect(new URL(dest, request.url));
+      return NextResponse.redirect(new URL(ROLE_DASHBOARDS[role] ?? "/dashboard/student", request.url));
     }
 
-    // Super-admin can go anywhere
+    // Super-admin can access any dashboard
     if (role === "super_admin") return response;
 
-    // /dashboard/student — any authenticated user can access
+    // Any authenticated user can access /dashboard/student
     if (pathname.startsWith("/dashboard/student")) return response;
 
-    // Role-specific gates
-    const dashboardRole = pathname.split("/")[2]; // e.g. "treasurer"
+    // Redirect to own dashboard if accessing wrong role's section
+    const dashboardRole = pathname.split("/")[2];
     if (dashboardRole && role !== dashboardRole) {
-      // Wrong section — redirect to own dashboard
-      const dest = ROLE_DASHBOARDS[role] ?? "/dashboard/student";
-      return NextResponse.redirect(new URL(dest, request.url));
+      return NextResponse.redirect(new URL(ROLE_DASHBOARDS[role] ?? "/dashboard/student", request.url));
     }
   }
 
@@ -131,12 +117,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico, site assets
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
