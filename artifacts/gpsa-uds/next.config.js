@@ -10,6 +10,11 @@ const nextConfig = {
       },
     ],
   },
+  allowedDevOrigins: [
+    "*.janeway.replit.dev",
+    "*.replit.dev",
+    "*.repl.co",
+  ],
 };
 
 module.exports = nextConfig;

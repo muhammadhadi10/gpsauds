@@ -1,0 +1,22 @@
+kind = "web"
+previewPath = "/"
+title = "GPSA-UDS"
+version = "1.0.0"
+id = "artifacts/gpsa-uds-app"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 3000
+
+[services.development]
+run = "cd /home/runner/workspace/artifacts/gpsa-uds && pnpm run dev"
+
+[services.env]
+PORT = "3000"
+BASE_PATH = "/"
