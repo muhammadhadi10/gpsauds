@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import {
+  getPublishedEvent,
+  getRelatedEvents,
+} from "@/lib/data/repository";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Calendar, MapPin, Clock, Users, ArrowLeft, ExternalLink } from "lucide-react";
@@ -12,43 +15,18 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("events")
-    .select("title, description")
-    .eq("slug", params.slug)
-    .single();
-
-  if (!data) return { title: "Event Not Found" };
+  const event = await getPublishedEvent(params.slug);
+  if (!event) return { title: "Event Not Found" };
   return {
-    title: data.title,
-    description: data.description.slice(0, 160),
+    title: event.title,
+    description: event.description.slice(0, 160),
   };
 }
 
 export default async function EventDetailPage({ params }: Props) {
-  const supabase = await createClient();
-
-  const { data: event } = await supabase
-    .from("events")
-    .select("*, profiles!created_by(full_name)")
-    .eq("slug", params.slug)
-    .eq("status", "published")
-    .single();
-
-  if (!event) notFound();
-
-  const { data: related } = await supabase
-    .from("events")
-    .select("*")
-    .eq("status", "published")
-    .neq("id", event.id)
-    .gte("starts_at", new Date().toISOString())
-    .order("starts_at")
-    .limit(3);
-
-  const ev = event as Event & { profiles: { full_name: string } };
-  const relatedEvents = (related ?? []) as Event[];
+  const ev = await getPublishedEvent(params.slug);
+  if (!ev) notFound();
+  const relatedEvents = await getRelatedEvents(ev.id);
   const isPast = new Date(ev.starts_at) < new Date();
   const isDeadlinePassed = ev.registration_deadline
     ? new Date(ev.registration_deadline) < new Date()

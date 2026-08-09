@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { getPublishedOpportunities } from "@/lib/data/repository";
 import type { Opportunity } from "@/types";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { OpportunitiesClient } from "@/components/site/OpportunitiesClient";
@@ -13,14 +13,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function OpportunitiesPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("opportunities")
-    .select("*")
-    .eq("status", "published")
-    .order("deadline", { ascending: true });
-
-  const opportunities = (data ?? []) as Opportunity[];
+  const opportunities = await getPublishedOpportunities();
 
   return (
     <>

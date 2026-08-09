@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import {
+  getPublishedOpportunity,
+  getRelatedOpportunities,
+} from "@/lib/data/repository";
+import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import {
   ArrowLeft,
@@ -29,44 +32,22 @@ const TYPE_COLORS: Record<string, "navy" | "gold" | "green" | "red" | "gray"> = 
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("opportunities")
-    .select("title, description")
-    .eq("slug", params.slug)
-    .single();
-
-  if (!data) return { title: "Opportunity Not Found" };
+  const opportunity = await getPublishedOpportunity(params.slug);
+  if (!opportunity) return { title: "Opportunity Not Found" };
   return {
-    title: data.title,
-    description: data.description.slice(0, 160),
+    title: opportunity.title,
+    description: opportunity.description.slice(0, 160),
   };
 }
 
 export default async function OpportunityDetailPage({ params }: Props) {
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("opportunities")
-    .select("*")
-    .eq("slug", params.slug)
-    .eq("status", "published")
-    .single();
-
-  if (!data) notFound();
-
-  const opp = data as Opportunity;
+  const opp = await getPublishedOpportunity(params.slug);
+  if (!opp) notFound();
   const isDeadlinePassed = opp.deadline
     ? new Date(opp.deadline) < new Date()
     : false;
 
-  const { data: related } = await supabase
-    .from("opportunities")
-    .select("id, title, slug, type, deadline, organisation")
-    .eq("status", "published")
-    .eq("type", opp.type)
-    .neq("id", opp.id)
-    .limit(3);
+  const related = await getRelatedOpportunities(opp.id, opp.type);
 
   return (
     <div className="pt-24">
@@ -204,13 +185,13 @@ export default async function OpportunityDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {(related ?? []).length > 0 && (
+        {related.length > 0 && (
           <div className="mt-16 pt-12 border-t">
             <h2 className="font-display text-2xl font-bold text-navy-900 mb-6">
               More {opp.type.charAt(0).toUpperCase() + opp.type.slice(1)} Opportunities
             </h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(related ?? []).map((r) => (
+              {related.map((r) => (
                 <Link
                   key={r.id}
                   href={`/opportunities/${r.slug}`}

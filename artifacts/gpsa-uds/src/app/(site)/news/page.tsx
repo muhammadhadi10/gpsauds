@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { getPublishedNews } from "@/lib/data/repository";
 import type { News } from "@/types";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { NewsCard } from "@/components/site/NewsCard";
@@ -13,14 +13,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function NewsPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("news")
-    .select("*, profiles!author_id(full_name, avatar_url)")
-    .eq("status", "published")
-    .order("published_at", { ascending: false });
-
-  const articles = (data ?? []) as News[];
+  const articles = await getPublishedNews();
   const featured = articles.find((a) => a.is_featured) ?? articles[0];
   const rest = articles.filter((a) => a.id !== featured?.id);
 

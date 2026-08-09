@@ -1,6 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import {
+  getPublishedEvents,
+  getPublishedNews,
+  getPublishedOpportunities,
+  getSiteSettings,
+} from "@/lib/data/repository";
 import { EventCard } from "@/components/site/EventCard";
 import { NewsCard } from "@/components/site/NewsCard";
 import { OpportunityCard } from "@/components/site/OpportunityCard";
@@ -17,42 +22,12 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const supabase = await createClient();
-
-  const [eventsRes, newsRes, opportunitiesRes, settingsRes] = await Promise.all([
-    supabase
-      .from("events")
-      .select("*")
-      .eq("status", "published")
-      .gte("starts_at", new Date().toISOString())
-      .order("starts_at")
-      .limit(3),
-    supabase
-      .from("news")
-      .select("*, profiles(full_name, avatar_url)")
-      .eq("status", "published")
-      .order("published_at", { ascending: false })
-      .limit(3),
-    supabase
-      .from("opportunities")
-      .select("*")
-      .eq("status", "published")
-      .order("deadline")
-      .limit(3),
-    supabase
-      .from("site_settings")
-      .select("key, value")
-      .in("key", ["site_tagline", "site_name", "contact_phone", "contact_email"]),
+  const [events, news, opportunities, settings] = await Promise.all([
+    getPublishedEvents(3),
+    getPublishedNews(3),
+    getPublishedOpportunities(3),
+    getSiteSettings(["site_tagline", "site_name", "contact_phone", "contact_email"]),
   ]);
-
-  const events = (eventsRes.data ?? []) as Event[];
-  const news = (newsRes.data ?? []) as News[];
-  const opportunities = (opportunitiesRes.data ?? []) as Opportunity[];
-
-  const settings: Record<string, string> = {};
-  for (const s of settingsRes.data ?? []) {
-    settings[s.key] = s.value;
-  }
 
   const phone = settings["contact_phone"] || "+233 XXX XXX XXXX";
   const email = settings["contact_email"] || "info@gpsa-uds.org";

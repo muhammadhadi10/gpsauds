@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { getPublishedEvents } from "@/lib/data/repository";
 import type { Event } from "@/types";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { EventsClient } from "@/components/site/EventsClient";
@@ -13,14 +13,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function EventsPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("events")
-    .select("*")
-    .eq("status", "published")
-    .order("starts_at", { ascending: false });
-
-  const events = (data ?? []) as Event[];
+  const events = await getPublishedEvents();
 
   return (
     <>

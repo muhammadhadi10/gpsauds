@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import {
+  getPublishedNewsArticle,
+  getRelatedNews,
+} from "@/lib/data/repository";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { ArrowLeft, User, Calendar } from "lucide-react";
@@ -12,44 +15,18 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("news")
-    .select("title, excerpt")
-    .eq("slug", params.slug)
-    .single();
-
-  if (!data) return { title: "Article Not Found" };
+  const article = await getPublishedNewsArticle(params.slug);
+  if (!article) return { title: "Article Not Found" };
   return {
-    title: data.title,
-    description: data.excerpt ?? undefined,
+    title: article.title,
+    description: article.excerpt ?? undefined,
   };
 }
 
 export default async function NewsArticlePage({ params }: Props) {
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from("news")
-    .select("*, profiles!author_id(full_name, avatar_url), news_tags(tag)")
-    .eq("slug", params.slug)
-    .eq("status", "published")
-    .single();
-
-  if (!data) notFound();
-
-  const article = data as News & {
-    profiles: { full_name: string; avatar_url: string | null };
-    news_tags: { tag: string }[];
-  };
-
-  const { data: related } = await supabase
-    .from("news")
-    .select("id, title, slug, excerpt, published_at, cover_image_url")
-    .eq("status", "published")
-    .neq("id", article.id)
-    .order("published_at", { ascending: false })
-    .limit(3);
+  const article = await getPublishedNewsArticle(params.slug);
+  if (!article) notFound();
+  const related = await getRelatedNews(article.id);
 
   return (
     <div className="pt-24">
@@ -77,14 +54,6 @@ export default async function NewsArticlePage({ params }: Props) {
               <ArrowLeft className="w-4 h-4" /> Back to News
             </Link>
 
-            {article.news_tags && article.news_tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                {article.news_tags.map(({ tag }) => (
-                  <Badge key={tag} variant="gold">{tag}</Badge>
-                ))}
-              </div>
-            )}
-
             <h1 className="font-display text-3xl md:text-4xl font-bold text-navy-900 mb-4 leading-tight">
               {article.title}
             </h1>
@@ -92,7 +61,7 @@ export default async function NewsArticlePage({ params }: Props) {
             <div className="flex items-center gap-4 text-sm text-muted-foreground mb-8 pb-8 border-b">
               <span className="flex items-center gap-1.5">
                 <User className="w-4 h-4" />
-                {article.profiles?.full_name ?? "GPSA-UDS"}
+                GPSA-UDS Editorial Board
               </span>
               {article.published_at && (
                 <span className="flex items-center gap-1.5">
@@ -122,7 +91,7 @@ export default async function NewsArticlePage({ params }: Props) {
                   More Articles
                 </h3>
                 <div className="space-y-4">
-                  {(related ?? []).map((r) => (
+                  {related.map((r) => (
                     <Link
                       key={r.id}
                       href={`/news/${r.slug}`}

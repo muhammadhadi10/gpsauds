@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { getApprovedResources } from "@/lib/data/repository";
 import type { AcademicResource } from "@/types";
 import { SectionHeader } from "@/components/site/SectionHeader";
 import { ResourcesClient } from "@/components/site/ResourcesClient";
@@ -13,14 +13,7 @@ export const metadata: Metadata = {
 export const revalidate = 120;
 
 export default async function ResourcesPage() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("academic_resources")
-    .select("*")
-    .eq("is_approved", true)
-    .order("created_at", { ascending: false });
-
-  const resources = (data ?? []) as AcademicResource[];
+  const resources = await getApprovedResources();
 
   return (
     <>
